@@ -1,0 +1,1239 @@
+Understanding and Detecting Dangerous Speech in Social Media
+Ali Alshehri1† , El Moatez Billah Nagoudi2† , Muhammad Abdul-Mageed2
+1 SUNY at Buffalo
+2 Natural Langauge Processing Lab, The University of British Columbia
+alimoham@buffalo.edu, {moatez.nagoudi,muhammad.mageeed}@ubc.ca
+Abstract
+Social media communication has become a signiﬁcant part of daily activity in modern societies. For this reason, ensuring safety in
+social media platforms is a necessity. Use of dangerous language such as physical threats in online environments is a somewhat rare, yet
+remains highly important. Although several works have been performed on the related issue of detecting offensive and hateful language,
+dangerous speech has not previously been treated in any signiﬁcant way. Motivated by these observations, we report our efforts to build
+a labeled dataset for dangerous speech. We also exploit our dataset to develop highly effective models to detect dangerous content. Our
+best model performs at 59.60% macro F1 , signiﬁcantly outperforming a competitive baseline.
+1.
+Introduction
+The proliferation of social media makes it necessary to
+ensure online safety. Unfortunately, offensive, hateful, ag-
+gressive, etc., language continues to be used online and put
+the well-being of millions of people at stake. In some cases,
+it has been reported that online incidents have caused not
+only mental and psychological trouble to some users but
+have indeed forced some to deactivate their accounts or, in
+extreme cases, even commit suicides (Hinduja and Patchin,
+2010). Previous work has focused on detecting various
+types of negative online behavior, but not necessarily
+dangerous speech. In this work, our goal is to bridge this
+gap by investigating dangerous content. More speciﬁcally,
+we focus on direct threats in Arabic Twitter. A threat can
+be deﬁned as “a statement of an intention to inﬂict pain,
+injury, damage, or other hostile action on someone in ret-
+ribution for something done or not done.”1 This deﬁnition
+highlights two main aspects: (1) the speaker’s intention of
+committing an act, which (2) he/she believes to be unfavor-
+able to the addressee (Fraser, 1998). We especially direct
+our primary attention to threats of physical harm. We build
+a new dataset for training machine learning classiﬁers to
+detect dangerous speech. Clearly, resulting models can be
+beneﬁcial in protecting online users and communities alike.
+The fact that social media users can create fake accounts
+on online platforms makes it possible for such users to
+employ hostile and dangerous language without worrying
+about facing effective social nor legal consequences. This
+continues to put the responsibility on platforms such as
+Facebook and Twitter to maintain safe environments for
+their users. These networks have related guidelines and
+invest in ﬁghting negative and dangerous content. Twitter,
+for example, prohibits any form of violence including
+threats of physical harm and promotion of terrorism. 2
+However, due to the vast volume of communication on
+these platforms, it is not easy to detect harmful content
+manually. Our work aims at developing automated models
+† Both authors contributed equally.
+1https://en.oxforddictionaries.com/
+definition/threat
+2https://help.twitter.com/en/
+rules-and-policies/twitter-rules
+to help alleviate this problem in the context of dangerous
+speech.
+Our focus on Arabic is motivated by the wide use of so-
+cial media in the Arab world (Lenze, 2017). Relatively re-
+cent estimates indicate that there are over 11M monthly
+active users as of March 2017, posting over 27M tweets
+each day (Salem, 2017). An Arabic country such as Saudi
+Arabia has the highest Twitter penetration level world-
+wide, with 37% (Iqbal, 2019). The Arabic language also
+presents interesting challenges primarily due to the dialec-
+tical variations cutting across all its linguistic levels: pho-
+netic, phonological, morphological, semantic and syntac-
+tic (Farghaly and Shaalan, 2009). Our work caters for
+dialectal variations in that we collect data using multi-
+dialectal seeds (Section 3.3.). Overall, we make the fol-
+lowing contributions:
+1) We manually curate a multi-dialectal dictionary of
+physical harm threats that can be used to collect data
+for training dangerous language models.
+2) We use our lexicon to collect a large dataset of threat-
+ening speech from Arabic Twitter, and manually an-
+notate a subset of the data for dangerous speech. Our
+datasets are freely available online.5
+3) We investigate and characterize threatening speech in
+Arabic Twitter.
+4) We train effective models for detecting dangerous
+speech in Arabic.
+The remainder of the paper is organized as follows:
+In
+Section 2., we review related literature. Building danger-
+ous lexica used to collect our datasets is discussed in Sec-
+tion 3.3.. We describe our annotation in Section 4.1.. We
+present our models in Section 5., and conclude in Sec-
+tion 6..
+2. Related work
+Detection of offensive language in natural languages has
+recently attracted the interest of multiple researchers.
+However, the space of abusive language is vast and has
+its own nuances. Waseem et al.
+(2017) classify abusive
+language along two dimensions: directness (the level to
+which it is directed to a speciﬁc person or organization or
+not) and explicitness (the degree to which it is explicit). Jay
+and Janschewitz (2008) categorize offensive language
+to three categories: Vulgar, Pornographic, and Hateful.
+The Hateful category includes offensive language such as
+threats as well as language pertaining to class, race, or
+religion, among others.
+In the literature, these concepts
+are sometimes confused or even ignored altogether. In the
+following, we explore some of the relevant work on each
+of these themes.
+Offensive Language. The terms offensive language and
+abusive language are commonly used interchangeably.
+They are cover terms that usually include all types of
+undesirable language such as hateful, racist, obscene, and
+dangerous speech. We review some work looking at these
+types of language here, with no speciﬁc focus on any of its
+forms. GermEval 2018 is a shared task on the Identiﬁcation
+of Offensive Language in German proposed by Wiegand
+et al.
+(2018). Their dataset consists of 8, 500 annotated
+tweets with two labels, “offensive” and “non-offensive”.
+Another relevant shared task is the OffensEval (Zampieri
+et al., 2019), which focuses on identifying and categorizing
+offensive language in social media. Very recently, an
+Arabic offensive language shared task is included in
+the 4th Workshop on Open-Source Arabic Corpora and
+Processing Tools (OSACT4). 3
+Hate Speech. Hate speech is a type of language that is bi-
+ased, hostile, and malicious targeting a person or a group of
+people because of some of their actual or perceived innate
+characteristics (Gitari et al., 2015). This type of harmful
+language received the most attention in the literature. Bur-
+nap and Williams (2014) investigate the manifestation
+and diffusion of hate speech and antagonistic content in
+Twitter in relation to situations that could be classiﬁed as
+‘trigger’ events for hate crimes. Their dataset consists of
+450K tweets collected during a two weeks window in the
+immediate aftermath of Drummer Lee Rigby’s murder in
+Woolwich, UK. In Waseem (2016), issues of annotation
+reliability are discussed. Authors examine whether the
+expertise level of annotators (e.g expert or amateur) and/or
+the type of information provided to the annotators, can
+improve the classiﬁcation of hate speech. For this purpose,
+they extend the dataset of (Waseem and Hovy, 2016)
+with a set of about 7K tweets annotated by two types of
+CrowdFlower users: expert and amateur. They ﬁnd that
+hate speech detection models trained on expert annotations
+outperform those trained on amateur annotations. This
+suggests that hate speech can be implicit and thus harder
+to detect by humans and machines alike. Another work
+by (Davidson et al., 2017) builds a hate speech lexicon
+based on a list of words and phrases provided by Hate-
+base.org. Using Twitter API, they crawled a set of 85M
+tweets containing terms from the lexicon. Most recent
+works on detecting hate on Twitter are done as part of a
+3http://edinburghnlp.inf.ed.ac.uk/
+workshops/OSACT4/
+SemEval2019 competition, HatEval ( `Oscar Garibo, 2019).
+This shared task addresses the problem of multilingual
+detection of hate speech against immigrants and women in
+Twitter.
+Obscene Language. Obscene speech includes vulgar and
+pornographic speech. A few research papers have looked
+at this kind of speech in social media (Singh et al., 2016;
+Mubarak et al., 2017; Alshehri et al., 2018). Mubarak
+et al. (2017) present an automated method to create and
+expand a list of obscene words, for the purpose of detecting
+obscene language. Abozinadah (2015) build a dataset of
+over 1M tweets comprising the most recent 50 tweets of
+255 users who has participated in swearing hashtags as
+well as the most recent 50 tweets of users in their network.
+As feature input to their classiﬁers, the authors extracted
+basic statistical measures from each tweet and reported
+96% accuracy of adult content detection. Alshehri et al.
+(2018) build a dataset of adult content in Arabic twitter
+and their distributors. The work identiﬁes geographical
+distribution of targets of adult content and develops models
+for detecting spreaders of such content.Alshehri et al.
+(2018) report 79% accuracy on detecting adult content.
+Racism and Sexism. Kwok and Wang (2013) create
+a balanced dataset comprising 24, 582 of ‘racist’ and
+‘non-racist’ tweets. Waseem and Hovy (2016) collect a
+set of 136K hate tweets based on a list of common terms
+and slurs pertaining ethnic minorities, gender, sexuality,
+and religion. Afterwards, a random set of 16K tweets
+are selected and manually annotated with three labels:
+‘racist’, ‘sexist’, or “neither”. Gamb ¨ack and Sikdar (2017)
+introduce a deep-learning-based Twitter hate speech text
+classiﬁcation model. Using data from Waseem and Hovy
+(2016) with about 6.5K tweets, the model classiﬁes tweets
+into four categories:
+‘sexist’, ‘racist’, ‘both sexist and
+racist’, and ‘neither’. Clarke and Grieve (2017), using
+the same list, explore differences among racist and sexist
+tweets along three dimensions:
+interactiveness, antago-
+nism, and attitude and ﬁnd an overall signiﬁcant difference
+between them.
+Dangerous Language. Little work has been dedicated
+to detection and classiﬁcation of dangerous language and
+threats. They are usually part of work on abusive and hate
+speech. This is to say that dangerous language has only
+been indirectly investigated within the NLP community.
+However, there is some research that is not necessarily
+computational
+in nature.
+For example, Gales (2011)
+investigates the correlation between interpersonal stance
+and the realization of threats by analyzing a corpus of 470
+authentic threats. Ultimately, the goal of Gale’s work is
+to help predict violence before it occurs. Hardaker and
+McGlashan (2016), on the other hand,
+investigates the
+language surrounding threats of rape on Twitter. In their
+corpus, the authors ﬁnd that women were the prime target
+of rape threats.
+In the rest of this paper, we explore the
+space and language of threats in Arabic Twitter. We now
+describe our lexicon and datasets.
+English
+exterminate
+kill
+give
+execute
+exterminate
+Dialect
+Verb
+all
+G,M,R
+G,M,R
+E,L
+E,G
+ 
+: )
+(
+	
+
+ 
+ 
+(
+ :
+( *
+ 
+  ;(cid:171)
+(
+(cid:250) 	 	(cid:175)
+ 
+(
+ 
+(cid:189)(cid:202)(cid:235)
+(
+ )
+ 	(cid:171) ( 
+1 \
+ 	(cid:171) ( 
+	(cid:202)
+ 
+(cid:175) (  * G,L,R
+Q
+D 3
+2 	3
+;(cid:202)C
+
+V3
+
+(cid:188) :
+(cid:189)(cid:235) :
+
+	:
+ 2
+G,M,R
+destroy
+G,L,M,R assassinate
+all
+rape
+pluck
+E,L,M
+assault
+all
+wound
+G
+cut off
+all
+whip
+all
+burn
+E,L,M,R
+smash
+E,G,L
+demolish
+G
+run over
+all
+slaughter
+E,G,M,R stone
+Verb
+	Z2
+3S *
+G(cid:202)S
+
+W(cid:202)S
+ U
+0 3U **
+
+W S
+ S
+  3_
+
+W 	(cid:174)]
+G(cid:202)]
+0 3 	_
+G
+	(cid:170)
+3 
+	;(cid:171)
+0
+0
+	3(cid:171)
+3 
+(cid:174)(cid:171)
+(cid:189)
+ 	(cid:175)
+Dialect
+English
+G,M
+E,G
+all
+E,G,R
+M
+contuse
+mark
+skin
+boil
+slash
+E,G,L,R
+drink
+E,G,L,R
+rip off
+E,G,L,R
+distort
+G
+cut off
+G,L
+slap
+G,L
+skin
+all
+hit
+E,G
+shoot
+all
+stab
+E,G,L,R make ﬂy
+E,G,M,R torture
+E
+torture
+E,G
+kill
+E,G,L,M destroy
+Verb Dialect
+all
+E
+all
+	(cid:175)
+3
+
+W R 	(cid:175) G,L
+	 
+(cid:174) 	(cid:175)*
+(cid:189) 	(cid:175)*
+	
+ 
+(cid:175)
+D 3 
+(cid:175)
+T 
+(cid:175)
+	(cid:173)\
+(cid:175) G,R
+^ 
+(cid:175)
+(cid:250) 	^
+(cid:175)
+	 
+(cid:175)
+	(cid:202) 
+(cid:175)
+3T(cid:187)
+G(cid:207)
+) **
+
+W M
+3 	
+	(cid:173)R 	
+T(cid:235)
+English
+blow up
+split
+burst
+disentangle
+kill
+E,G,L,R
+E,G,L
+all
+sound
+divide
+smash
+G,M
+smash
+E,G,L,M eliminate
+all
+cut
+E,G,L,R
+pluck
+all
+break
+G
+hit
+E,G,L,R
+erase
+destroy
+E,G,M,R slaughter
+E,G,M,R blast
+G,L,R
+smash
+Table 1: Our list of dangerous verbs. All= all dialects. E= Egyptian. G= Gulf. L= Levantine. M= MSA. R= Maghrebi.
+* = metaphorical. ** = used idiomatically.
+3. Dangerous Lexica and Dataset
+3.1. Dangerous Language
+We deﬁne dangerous language as a statement of an inten-
+tion to inﬂict physical pain, injury, or damage on someone
+in retribution for something done or not. This deﬁnition ex-
+cludes threats that do not reﬂect physical harm on the side
+of the receiver end of the threat. The deﬁnition also ex-
+cludes tongue in cheek whose real intention is to tease. An
+example of this later category is a threat made in the con-
+text of sports where it is common among fans to tease one
+another using metaphorical, string language (see Example
+# 6 in Section 3.3.).
+3.2. Dangerous Lexica
+We came up with a list of 57 verbs in their basic form that
+can be used literally or metaphorically to indicate physical
+harm (see table 1). This list is by no means exhaustive,
+although we did our best to expand it as much as possible.
+As such, the list covers the frequent verbs used in the
+threatening domain in Arabic. 4 These verbs are used in
+one or more of the following varieties: Egyptian, Gulf,
+Levantine, Maghrebi, and MSA (see table 2 for more
+details). Most of these verbs (n=50 out of 57) literally
+indicate physical harm. Examples are 	(cid:170) (‘to stap’)
+4The concept of frequency here is based on native speaker
+knowledge of the language. The list was developed by the 3
+authors, all of whom are native speakers of Arabic with multi-
+dialectal ﬂuency.
+and G(cid:202)S (‘to de-skin’). The rest are used (sometimes
+metaphorically) to indicate threatening, such as 	(cid:202)
+ 
+(cid:175) ( (‘to
+pluck’) and 3S (‘to mark’) usually with a body part
+such as 	   (‘face’) or P
+(2 (‘head’). Finally, some of
+the verbs are used idiomatically, such as   : 	 0 3U (‘to
+drink someone’s blood’) and
+erase/eliminate from the face of the earth’). Multiword
+expressions in our seed list can be found in Table 3.
+P  (cid:250)(cid:206)(cid:171) 	 ) (‘to
+	Z2 * (
+ 
+Dialect
+MSA
+Gulf
+Egyptian
+Maghrebi
+Levantine
+All (unique)
+# of verbs
+30
+50
+39
+34
+34
+57
+Table 2: Distribution of threat verbs across Arabic dialects.
+To be able to collect data, we used our manually curated list
+to construct threat phrases indicating physical harm such as
+(cid:189)(cid:202)
+ 
+(cid:175) ( (‘I kill you’) and 3T(cid:186)  (‘He breaks him/it’). That is,
+each phrase consists of a physical harm verb, a singular or
+plural ﬁrst or third person subject, and a plural or singular
+second or third person object. This gives us the following
+pattern:
+1st/3rd (SG / PL) + threat verb + 2nd/3rd (SG / PL)
+Some of the phrases only differ on the basis of spelling due
+to dialectical variations. For example, the body part 	  
+(‘face’) can be spelled as (cid:186)(cid:238),    or (cid:186)(cid:235)   in the plural
+form depending on the dialect. Another example is the verb
+	
+ 
+(cid:175) (‘kill’), which can also be spelled as 	
+ ( in Egyptian and
+some other Arabic dialects. Manual search of some of the
+seed tokens in twitter suggests that patterns involving 3rd
+person subject are almost always not threats. The following
+are two illustrating examples of this non-threatening use:
+1) 3T (cid:203) (
+	[(cid:170)
+
+	3 	(cid:175) 	
+ 
+(cid:174)  	 	 ) 
+	(cid:175) 	 R  (cid:203)
+2) (cid:250) (cid:205) ) 	(cid:171) [ 	U  S    3 ) 	(cid:204) ( 3T(cid:186)  )
+‘Only a dear friend can break one’s heart’
+‘If he doesn’t score, Messi kills happiness in some people’
+( 	: (  (cid:250) T 
+Thus, we decided to limit our list of phrases to ‘direct’ dan-
+gerous threats, which are phrases involving a singular or
+plural ﬁrst person subject and singular or plural second per-
+son object as follows:
+1st (SG/PL) + threat verb + 2nd (SG/PL)
+Examples of these direct threats include (cid:189) \
+ 	(cid:170) 	 (‘We rape
+you’) and (cid:186) 
+(cid:175)3 ( (‘I burn you’). Less dangerous threats
+such as (cid:186)3 ( (“We hurt you (all)”) and (cid:189) 	(cid:175) : ( (‘I push
+you’) are also not considered. Our motivation for not in-
+cluding these latter phrases even though they involve direct
+threats is that they indicate less danger and (more crucially)
+are more likely to be used metaphorically in Arabic. This
+resulted in a set of 286 direct and dangerous phrases, which
+constitute our list of ‘dangerous’ seeds. We make the list of
+286 direct threats phrases available to the research commu-
+nity. 5
+3.3. Dataset
+We use the constructed ‘dangerous’ seed list to search Twit-
+ter using the REST API for two weeks resulting in a dataset
+of 2.8M tweets involving ‘direct’ threats as shown in Ta-
+ble 4. We then extract user ids from all users who con-
+tributed the REST API data (n = 399K users) and crawled
+their timelines (n = 705M tweets). We then acquire
+107.5M tweets from the timelines, each of which carry one
+or more items from our ‘dangerous’ seed list. Combining
+these two datasets (the REST API dataset and dataset based
+on the timelines) results in a dataset consisting of 110.3M
+tweets as shown in Table 4. In this work, we focus on ex-
+ploiting the REST API dataset exclusively, leaving the rest
+of the data to future research.
+4. Data Annotation
+4.1. Annotation
+We ﬁrst randomly sample 1K tweets from our REST API
+dataset.5 Two of the authors annotated each tweet for being
+a threat (‘dangerous’) or not (‘safe’). This sample anno-
+tation resulted in a Kappa (κ) score of 0.57, which is fair
+5https://github.com/UBC-NLP/ara_
+dangspeech.
+according to Landis and Koch’s scale (Landis and Koch,
+1977). The two annotators then held several discussion ses-
+sions to improve their mutual understanding of the problem
+and deﬁne some instructions as to how to label the data.
+We also added another random sample of 4K tweets (for
+a total size of 5K ) to the annotation pool. After extensive
+revisions of the disagreement cases by the two annotators,
+the κ score for the whole dataset (5K ) was found to be
+at 0.90. The annotated dataset has a total of 1, 375 tweets
+in the ‘dangerous’ class and 3, 636 in the ‘non-dangerous’
+class. Our overall agreed-upon instructions for annotations
+include the following:
+• Textual threats combined with pleasant emojis such as
+and
+are not dangerous, as opposed to threat
+combined with less pleasant emojis such as
+.
+Thus, tweet 3 below should be coded as ‘safe’ while
+tweet 4 should be tagged as ‘dangerous’.
+3) @user (cid:189)(cid:202)
+ 
+(cid:175) )
+) 	
+ 
+(   
+(cid:174) 
+
+W 	(cid:207) (
+‘It goes with logic that I kill you
+’
+4) @user @user @user (cid:189) 	(cid:170) ( * Q (cid:250)  ( ;
+(cid:175)
+‘Move forward [in front of me] or else I stab you
+’
+• Mitigated threats with question marks or epistemic
+modals are dangerous unless they are combined with
+positive language or emojis such as Example 5 below.
+Note that the word Touha in Example 5 is an infor-
+mal, friendly form for Arabic names such as FatHi or
+MamdouH.
+5) @user 	
+ )  (cid:189)(cid:202)
+ 
+(cid:175) ( 3(cid:186) 	(cid:174)
+) 	 (
+‘I am thinking of killing you, Touha
+’
+• Threats related to sports are not dangerous. That is be-
+cause it is common to use verbs like 3 	 (“slaughter”)
+and 1 \
+ 	(cid:171) ( (“rape”) among fans of rival teams to de-
+scribe wins and losses, as in the following example.
+6) @user (cid:187)2 (cid:234)C
+	    (cid:186) 	]2 ( (cid:250)(cid:206)(cid:171) (cid:186) \
+ 	(cid:170) 	 	
+ +C
+‘It’s actually better that we ‘rape’ you in your stadium,
+among your fans’
+• Ambiguous threats such as threats consisting of one
+word (as in Example 7 below) should be coded as
+‘dangerous’:
+7) ((cid:186)(cid:202)
+
+(cid:175) (
+‘I kill you’
+Below, we show examples of tweets that were annotated as
+‘dangerous’:
+8) @user @user
+0 +(cid:190)(cid:202)(cid:203) (cid:189) 2 (   (cid:189) 
+(cid:175)3 (   : 
+‘I wish to burn you and throw you to dogs’
+Seed
+(cid:189) : 	 0 3U (
+(cid:189) : 0 3U (
+(cid:186) : 	 0 3U (
+(cid:189)(cid:234)    S (
+(cid:189)S (2 3  (
+(cid:186)S  2 3  (
+	(cid:175) (
+(cid:189)S (2 3
+(cid:189)(cid:234)   	 
+(cid:174) 	(cid:175) (
+(cid:186)(cid:235)   	 
+(cid:174) 	(cid:175) (
+(cid:189)(cid:234)   (cid:189) 	(cid:175) (
+(cid:189) (cid:202)(cid:171) (cid:250)  	^
+(cid:175) (
+(cid:186) (cid:202)(cid:171) (cid:250)  	^
+(cid:175) (
+(cid:189)(cid:234)   3T(cid:187) (
+English
+Seed
+English
+I drink from your blood
+I drink your blood
+I drink your blood all
+I disﬁgure your face
+I cut your head
+I cut your head all
+I blow up your head
+I burst your face
+I hit your face all
+I disentangle your face
+I ﬁnish you
+I ﬁnish you all
+I break your face
+	Z2 * (
+P  (cid:250)(cid:206)(cid:171) 	 (cid:189)  (
+	Z2 * (
+P  (cid:250)(cid:206)(cid:171) 	 (cid:186)  (
+(cid:189) : 	 0 3T 	
+(cid:189) : 0 3T 	
+(cid:186) : 	 0 3T 	
+(cid:189)S (2 3  	
+(cid:186)S  2 3  	
+(cid:189)S (2 3
+	(cid:174) 	
+(cid:189)(cid:234)   	 
+(cid:174) 	(cid:174) 	
+(cid:189) (cid:202)(cid:171) (cid:250)  	^ 
+(cid:174) 	
+(cid:186) (cid:202)(cid:171) (cid:250)  	^ 
+(cid:174) 	
+	Z2 * (
+P  (cid:250)(cid:206)(cid:171) 	 (cid:189)  	(cid:223)
+	Z2 * (
+I erase you from the face of the earth
+I erase you all from the face of the earth
+We drink from your blood
+We drink your blood
+We drink your blood all
+I cut your head
+I cut your head all
+We blow up your head
+We hit your face
+We ﬁnish you
+We ﬁnish you all
+I erase you from the face of the earth
+P  (cid:250)(cid:206)(cid:171) 	 (cid:186)  	(cid:223) We erase you all from the face of the earth
+Table 3: Multiword expressions in our seed list.
+Dataset
+REST API
+Timelines
+ALL
+# of tweets
+2.8M
+107.5M
+110.3M
+Table 4: Breakdown of our ‘dangerous’ dataset.
+Safe
+Dangerous
+Total
+Safe
+3, 570
+70
+3, 640
+Dangerous
+52
+1319
+1, 371
+Total
+3, 622
+1, 389
+5, 011
+Table 5: Annotator Agreement of 5011-tweet sample.
+9) @user (cid:189) 3 	_ (    
+(cid:175) (
+	R(cid:204)   : 
+	 
+(cid:174)  3(cid:203) ( 0
+ ) 
+(cid:175) 
+R 	 	 2 (  )
+(cid:175)
+Q  	(cid:202)(cid:190)
+ )
+‘Don’t talk to me in this way, or else I hit you! Talking of
+(marrying) four women!’
+10) @user @user
+	(cid:172)S  
+	(cid:170)(cid:203) (
+P3(cid:170)(cid:203) ( 0 2   0 3(cid:204) (
+( ; 
+
+	 	  ) 	C )  0 3(cid:170)(cid:203) ( 3  	3 	 	C ) 
+	     	 	 )   
+ 	 (
+
+V3 (cid:186) 
+(cid:175)3 	
+	(cid:172)S
+‘The war will begin. By God, we will burn you down, you
+fags, you pigs, you traitors’
+11) @user   	2 * ( 	: )(cid:235) P2 ;(cid:203) (
+	 (
+ ; 	(cid:174)
+S ( ) 2 )C   ( : 2 )(cid:204) (
+
+0 ) 	  *  3T
+(
+ 	 (  )(cid:234)(cid:204) (  
+	2 (cid:187) ) 	(cid:174)
+(cid:175) (cid:250)(cid:206)(cid:171) (cid:186) 3 	^ 	
+‘A donkey will always be a donkey. You didn’t learn the
+lesson. We have to hit you on the back of you heads like
+kids. Are you humans or animals?’
+12) @user (cid:189)(cid:202)
+ 
+(cid:175) ( Q  (cid:189)C3U ( (cid:250)  (  (cid:186)
+   (cid:250) (cid:187)  3(cid:187) (cid:250) 
+	 (cid:171)
+‘Give me your address so I can come to you, and not only
+kill you but also dissect you’
+Measure
+Avg. # timeline tweets
+Avg. # dangerous tweets / user
+St. dev.
+25th percentile
+50th percentile
+75th percentile
+Minimum
+Maximum
+Value
+2, 313
+3.97
+3.64
+1
+4
+6
+1
+23
+Table 6: Descriptive statistics of the timeline data of 1, 370
+users who contributed tweets classiﬁed as ‘dangerous’ in
+our annotated dataset.
+Seed
+(cid:189)
+	: (
+(cid:189)(cid:202)
+ 
+(cid:175) (
+(cid:189) \
+ 	(cid:171) (
+(cid:189) 3 	_ (
+(cid:189)
+	;(cid:171) (
+(cid:189)  : (
+(cid:188) ;(cid:202)C (
+(cid:189) 	(cid:170) (
+(cid:189)C3 (
+(cid:189) 
+(cid:175)3 (
+English
+Emoji
+I slaughter you
+I kill you
+I rape you
+I hit you
+I torture you
+I hit/give you
+I lash you
+I stab you
+I hurt you
+I burn you
+Table 7: Top 10 most frequent ‘dangerous’ seeds and emo-
+jis in our REST API dataset.
+4.2. Data Analysis
+The fact that ‘dangerous’ tweets are not frequent in the
+dataset suggests that this phenomenon of dangerous speech
+is relatively rare in the Twitter domain. To further inves-
+tigate the commonality of such a phenomenon, we extract
+Models
+Baseline
+BERT
+BERT
+–
+Dangerous
+Dangerous + Offensive
+BERT-Emotion
+Dangerous
+BERT-Emotion Dangerous + Offensive
+Datasets
+Precision Recall
+Acc
+F1
+50.00
+58.42
+53.80
+60.06
+54.50
+29.33
+60.10
+53.44
+59.24
+53.99
+58.66
+74.27
+66.11
+77.97
+66.84
+36.97
+58.98
+53.52
+59.60
+54.11
+Table 8: Results from our models on TEST.
+the timelines of the authors of tweets in the dangerous class
+in the annotated dataset. Table 6 shows some descriptive
+statistics of the occurrence of dangerous seeds in their time-
+lines. We can see from Table 6 that timelines contain on av-
+erage 2, 313 tweets for each user, and there are on average
+3.97 tweets in each timeline containing a dangerous seed
+token. This represents ∼ 0.17% of the tweets for each user.
+The average number of dangerous tweets is higher (n = 6)
+for users in the 75th percentile as opposed to n = 1 in the
+25th percentile.
+To further understand dangerous language, we also analyze
+all the 5, 011 tweets from our annotated dataset. We
+identify a number of patterns in the data, cutting across
+both the ‘dangerous’ and ‘safe’ classes. We explain each
+of these patterns next.
+Conditional threats: One common threatening pattern
+involves conditional statements where the consequent in-
+volves a physical threat by the speaker toward the ad-
+dressee, and the antecedent is a conditional phrase involv-
+ing deterrence of an action that can possibly be carried out
+by the addressee or someone else. The following are two
+examples:
+13) @user (cid:250)U
+‘I slaughter you if you (F) do anything’
+	  R
+ ( 	: ( (cid:189)
+ 
+) 	(cid:170) (cid:189) 	(cid:170) (
+( )C3 
+ 
++(cid:207) (   ) (
+	: (
+	(cid:172)S 	 
+(cid:174)
+ 	 (
+( 	: (
+14) @user
+‘If he transfers, I will stab you hardly in front of the crowds’
+It is clear from Examples 13 and 14 that the threats are
+directed to a twitter user mentioned in the tweet. So
+these tweets are potentially part of ongoing conversations
+between the person who posted the tweet and the user
+mentioned in the body of the tweet. As Table 9 shows,
+∼ 71.2% of tweets in our annotated dataset (across
+the ‘dangerous’ and ‘safe’ classes) contain mentions of
+other Twitter users. This percentage is higher within the
+dangerous class (%= 78).
+Threats accompanied with commands: Another com-
+mon pattern involves a command accompanying the threat
+as in Example 15 below. These kinds of threats are more
+common in the dangerous than the safe class.
+15) @user (cid:189)(cid:234)   	 
+(cid:174) 	(cid:175) ( * 	  (cid:170)(cid:202) 
+(cid:174) 	 (   
+(cid:175) (
+‘I say get out before I hit your face’
+Threats accompanied with questions: Another less com-
+mon pattern is threats in the form of questions. This kind of
+Phenomena Freq.
+Percentage
+(non-
+dangerous)
+Percentage
+(dangerous
+class)
+Mentions
+Questions
+Emoji
+Conditional
+Body parts
+Hahaha
+3673
+100
+2, 010
+742
+378
+355
+72.8%
+2.8%
+45.5%
+15.8%
+6.6%
+9.9%
+78%
+5%
+36%
+11.4%
+11.3%
+1.1%
+Table 9: The frequency of some textual phenomena in our
+Annotated data.
+threats occurs in about 5% of our dangerous data as com-
+pared to 2.8% in the safe class. Unlike the examples above,
+the reason behind most of the ‘question’ threats is not par-
+ticularly clear as they tend to be short, sometimes of one
+word. Interpretation of these threats requires more context,
+beyond the level of the tweet itself. Examples 16-18 illus-
+trate this category.
+‘can i kill you by the pen’
+16) 3 (cid:204) ( (cid:203) (
+	 (cid:189)(cid:202)
+ 
+(cid:175) (
+	(cid:186)(cid:220)
+17) @user  (cid:189) \
+ 	(cid:171) ( 	 	(cid:174) 	 
+	: (
+‘Does it work if I rape you?’
+18) @user  (cid:189)
+‘I slaughter you?’
+Threat accompanied by modality: Some threats carry de-
+ontic modality where modals such as ‘would’, ‘probably’,
+‘may’ are employed. Epistemic modality are also found in
+some data points. Similar to the question types above, these
+tweets (Examples 19-21 below) are less threatening than
+Examples 13-18 above.
+19) @user (cid:189) \
+ 	(cid:171) ( (cid:250) 
+	(cid:202)(cid:170)
+	: (   : 
+21) @user (cid:189)
+ _ 	 (cid:189)(cid:202)
+ 
+(cid:175) ( D 2 (cid:250) (cid:206)(cid:190) S
+‘May I rape you?!’ (deontic modality)
+20) @user (cid:189)
+‘I would like to kill you’ (deontic modality)
+‘I am probably going to kill you with your friends’ (epistemic
+modality)
+Metaphorical
+threats: Many of
+the tweets involve
+metaphorical use of the phrases in our annotated data. The
+target domain of the majority of these metaphorical uses is
+either sports or relationships. Words such as ‘kill’, ‘rape’,
+
+and ‘slaughter’ are used to indicate ‘wining’ in sport or
+‘burn’ to mean ‘pain’ or ‘longing’ in romantic relation-
+ships. Examples 23-24 illustrate these cases:
+20) D (2 3(cid:186) 	    (3
+R R 	 )(cid:207) ( (cid:250) 
+	/ ( 	 *   
+(cid:175) 1  (
+((cid:170)
+
+S ( ) 	(cid:223) (  3
+	\(cid:203) (  3(cid:171) 	;(cid:202)(cid:203) (cid:250) (cid:171) ( : + 	(cid:175) (cid:186) \
+ 	(cid:170) 	
+‘I would like to tell my Manchester (football club) fans that
+we will rape them tomorrow’
+21) ) (3 	(cid:171) (cid:189)   	(cid:174) (  ) 
+(cid:174) R(cid:171) (cid:189) 
+(cid:175)3 ( P
+‘I will burn you with love and put off (the ﬁre on you) with
+affection’
+Emojis: Another interesting phenomenon (see Table 9)
+is the frequent use of emojis, which are found in about
+40% of the annotated dataset. This is not surprising as it
+helps participants mitigate (and hence better disambiguate
+the nature of) their threats. Table 7 shows the top most
+frequent emojis used in our REST API data. It is evident
+that most of the used emojis do not indicate friendliness,
+but rather have a threatening nature. This is also true of
+using expressive interjections such as hahaha, which is
+more common in the non-dangerous than the dangerous
+class. Additionally, as mentioned above, some expressions
+involve use of ‘body parts’ such as eyes, head, face, nose,
+etc.. These are found to occur signiﬁcantly higher in the
+‘dangerous’ class.
+Conversational context: Finally, Table 7 also shows the
+top 10 most frequent seeds in our REST API dataset. All
+of these seeds involve a ﬁrst singular person subject and a
+singular second person object, which indicate that many of
+these tweets containing dangerous seeds are part of one-to-
+one conversations on Twitter.
+5. Deep Learning Models
+Dangerous speech data. We use our 5, 011 annotated
+tweet dataset for training deep learning models on dan-
+gerous speech. The dataset comprises 3, 570 ‘safe’ tweets
+and 1, 389 ‘dangerous’ tweets. We ﬁrst remove all the
+seeds in our lexicon since these were used in collecting the
+data. We then keep only tweets with at least two words,
+obtaining 4, 445 tweets with 3, 225 ‘safe’ labels and 1, 220
+‘dangerous’ tweet (see Table 10). We split this dataset into
+80% training, 10% development, and 10% test.
+Offensive speech data.
+In one of our settings, we also
+use the offensive dataset released via the Offensive Shared
+Task 2020.6 This offensive content dataset consists of 8000
+tweets (1, 590 ‘offensive’ and 6, 410 ‘non-offensive’). We
+use the offensive class data to augment our train split.
+Hence, we evaluate only on our test split where tweets are
+restricted to our dangerous gold tweets in the annotated
+dataset. We run this experiment as a way to test the utility
+of exploiting offensive tweets for enhancing dangerous
+language representation based on the assumption that dan-
+gerous speech is a subset of offensive language. However,
+as we see in Table 8, this measure did not result in any
+improvements on top of our dangerous models. In fact, it
+leads to model deterioration.
+#Safe
+#Dangerous
+Total
+Train Dev Test
+2, 727
+852
+3, 579
+244
+189
+433
+254
+179
+433
+Table 10: Distribution of dangerous and safe classes in our
+annotated dataset after normalization by removing seeds
+and one-word tweets.
+Models. For the purpose of training deep learning models
+for detecting dangerous speech, we exploit the Bidirec-
+tional Encoder Representations from Transformers (BERT)
+(Devlin et al., 2018) model. For all our models, we use the
+BERT-Base Multilingual Cased (Multi-Cased) model.7 It is
+trained on Wikipedia for 104 languages (including Arabic)
+with 12 layers, 12 attention heads, 768 hidden units each
+and 110M parameters. Additionally, we further ﬁne-tune
+an off-the-shelf trained BERT Emotion (BERT-EMO) from
+AraNet (Abdul-Mageed et al., 2019) on our dangerous
+speech task. BERT-EMO is trained with Google’s BERT-
+Base Multilingual Cased model on 8 emotion classes
+exploiting Arabic Twitter data. We train all BERT models
+for 20 epochs with a batch size of 32, maximum sequence
+size of 50 tokens and learning rate up to 2e−5 . We identify
+best results on the development set, and report ﬁnal results
+on the blind test set. As our baseline, we use the majority
+class in our training split. Note that since our dataset is
+not balanced, the majority class baseline is competitive
+(63.97% macro F1 score). Also, importantly, due to the
+imbalance in class distribution, the macro F1 score (the
+harmonic mean of precision and recall) is our metric of
+choice as it is more balanced than accuracy.
+Results & Discussion. As Table 8 shows, the results
+demonstrate that all the models outperform the baseline
+and succeed in detecting the dangerous speech with F1
+scores between 53.42% and 59.60%. We also observe
+that training on the offensive dataset did not improve the
+results. On the contrary, augmenting training data with the
+offensive task tweets cause deterioration to 53.52% F1 for
+BERT and 54.11% F1 for BERT-Emotion.
+The best model for detecting dangerous tweets is BERT-
+Emotion when ﬁne-tuned on our gold dangerous dataset.
+It obtains an accuracy level of 77.97% and F1 score of
+59.60%. We note that both accuracy and F1 are signiﬁ-
+cantly higher then the the baseline. As mentioned earlier,
+since our dataset is highly imbalanced, F1 , rather than ac-
+curacy, should be used as the metric of choice for evalua-
+tion. As such, our models are signiﬁcantly better than our
+baseline.
+6http://edinburghnlp.inf.ed.ac.uk/
+workshops/OSACT4/
+7https://github.com/google-research/bert/
+blob/master/multilingual.md.
+6. Conclusion
+We have described our efforts to collect and manually label
+a dangerous speech dataset from a range of Arabic varieties.
+Our work shows that dangerous speech is rare online, thus
+making it difﬁcult to ﬁnd data for training machine learning
+classiﬁers. However, we were able to collect and annotate a
+sizeable dataset. To accelerate research, we will make our
+data available upon request. Another contribution we made
+is developing a number of models exploiting our data. Our
+best models are effective, and can be deployed for detect-
+ing the rare, yet highly serious, phenomenon of dangerous
+speech. For future work, we plan to further explore contexts
+of use of dangerous language in social media. We also plan
+to explore other deep learning methods on the task.
+7. Bibliographical References
+Abdul-Mageed, M., Zhang, C., Hashemi, A., and Nagoudi,
+E. M. B. (2019). Aranet: A deep learning toolkit for
+arabic social media. arXiv preprint arXiv:1912.13072.
+Abozinadah, A., M. A. a. J. J. (2015). Detection of abu-
+sive accounts with arabic tweets. International Journal
+of Knowledge Engineering, Vol. 1, No. 2.
+Alshehri, A., Nagoudi, A., Hassan, A., and Abdul-Mageed,
+M. (2018). Think before your click: Data and models
+for adult content in arabic twitter. The 2nd Text Analyt-
+ics for Cybersecurity and Online Safety (TA-COS-2018),
+LREC.
+Burnap, P. and Williams, M. L. (2014). Hate speech, ma-
+chine classiﬁcation and statistical modelling of informa-
+tion ﬂows on twitter: Interpretation and communication
+for policy decision making.
+Clarke, I. and Grieve, J. (2017). Dimensions of abusive
+language on twitter. Association for Computational Lin-
+guistics.
+Davidson, T., Warmsley, D., Macy, M., and Weber,
+I.
+(2017). Automated hate speech detection and
+the problem of offensive language.
+arXiv preprint
+arXiv:1703.04009.
+Devlin, J., Chang, M.-W., Lee, K., and Toutanova, K.
+(2018). Bert: Pre-training of deep bidirectional trans-
+formers for language understanding. arXiv preprint
+arXiv:1810.04805.
+Farghaly, A. and Shaalan, K.
+(2009). Arabic natural
+language processing: Challenges and solutions. ACM
+Transactions on Asian Language Information Process-
+ing (TALIP), 8(4):1–22.
+Fraser, B. (1998). Threatening revisited. Forensic linguis-
+tics, 5(2).
+Gales, T. (2011). Identifying interpersonal stance in threat-
+ening discourse: An appraisal analysis. Discourse Stud-
+ies, 13(1):27–46.
+Gamb ¨ack, B. and Sikdar, U. K. (2017). Using convolu-
+tional neural networks to classify hate-speech. In Pro-
+ceedings of the First Workshop on Abusive Language On-
+line, pages 85–90.
+Gitari, N. D., Zuping, Z., Damien, H., and Long, J. (2015).
+A lexicon-based approach for hate speech detection. In-
+ternational Journal of Multimedia and Ubiquitous Engi-
+neering, 10(4):215–230.
+Hardaker, C. and McGlashan, M. (2016). ’real men don’t
+hate women’: Twitter rape threats and group identity.
+Journal of Pragmatics, 91:80 – 93.
+Hinduja, S. and Patchin, J. W.
+(2010). Bullying, cy-
+berbullying, and suicide. Archives of suicide research,
+14(3):206–221.
+Iqbal, M. (2019). Twitter revenue and usage statistics in
+2019. November.
+Jay, T. and Janschewitz, K.
+(2008). The pragmatics of
+swearing. Journal of Politeness Research. Language,
+Behaviour, Culture, 4(2):267–288.
+Kwok, I. and Wang, Y. (2013). Locate the hate: Detecting
+tweets against blacks. In AAAI.
+Landis, J. R. and Koch, G. G. (1977). The measurement
+of observer agreement for categorical data. Biometrics,
+33(1):159–174.
+Lenze, N. (2017). Social media in the arab world: Com-
+munication and public opinion in the gulf states. Euro-
+pean Journal of Communication, 32(1):77–79.
+Mubarak, H., Darwish, K., and Magdy, W. (2017). Abu-
+sive language detection on arabic social media. In Pro-
+ceedings of the First Workshop on Abusive Language On-
+line, pages 52–56.
+`Oscar Garibo,
+i. O.
+(2019). Multilingual detection of
+hate speech against immigrants and women in twitter at
+semeval-2019 task 5: Frequency analysis interpolation
+for hate in speech detection. In Proceedings of the 13th
+International Workshop on Semantic Evaluation, pages
+460–463.
+Salem, F. (2017). The arab social media report 2017: So-
+cial media and the internet of things: Towards data-
+driven policymaking in the arab world. Vol. 7.
+Singh, M., Bansal, D., and Sofat, S.
+(2016). Behav-
+ioral analysis and classiﬁcation of spammers distributing
+pornographic content in social media. Social Network
+Analysis and Mining, 6(1):41, Jun.
+Waseem, Z. and Hovy, D. (2016). Hateful symbols or hate-
+ful people? predictive features for hate speech detec-
+tion on twitter. In Proceedings of the NAACL student
+research workshop, pages 88–93.
+Waseem, Z., Davidson, T., Warmsley, D., and Weber, I.
+(2017). Understanding abuse: A typology of abusive
+language detection subtasks. CoRR, abs/1705.09899.
+Waseem, Z. (2016). Are you a racist or am i seeing things?
+annotator inﬂuence on hate speech detection on twitter.
+In Proceedings of the ﬁrst workshop on NLP and compu-
+tational social science, pages 138–142.
+Wiegand, M., Siegel, M., and Ruppenhofer, J.
+(2018).
+Overview of the germeval 2018 shared task on the iden-
+tiﬁcation of offensive language.
+Zampieri, M., Malmasi, S., Nakov, P., Rosenthal, S., Farra,
+N., and Kumar, R. (2019). Semeval-2019 task 6: Identi-
+fying and categorizing offensive language in social me-
+dia (offenseval). arXiv preprint arXiv:1903.08983.

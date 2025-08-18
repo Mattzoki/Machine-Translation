@@ -1,0 +1,10 @@
+corpus
+data
+model
+
+
+build_vocab.py
+*.zip
+
+.venv*
+.ipynb*

@@ -1,0 +1,50 @@
+Assignments/
+├── Assignment 2/
+│   ├── Assignment 2/
+│   │   ├── -p/
+│   │   ├── Source XMLs/
+│   │   │   ├── English.xml
+│   │   │   └── Hindi.xml
+│   │   ├── corpus/
+│   │   ├── ctranslate-tutorial-main/
+│   │   │   ├── opus-mt-en-hi/
+│   │   │   │   ├── config.json
+│   │   │   │   ├── model.bin
+│   │   │   │   └── shared_vocabulary.json
+│   │   │   ├── LICENSE.md
+│   │   │   ├── README.md
+│   │   │   ├── evaluation.md
+│   │   │   ├── quickstart_decoding.ipynb
+│   │   │   └── requirements.txt
+│   │   ├── data/
+│   │   │   └── config.yaml
+│   │   ├── mbart_ct2/
+│   │   │   ├── config.json
+│   │   │   ├── generation_config.json
+│   │   │   ├── model.safetensors
+│   │   │   ├── sentencepiece.bpe.model
+│   │   │   ├── special_tokens_map.json
+│   │   │   └── tokenizer_config.json
+│   │   ├── model/
+│   │   ├── Assignment.ipynb
+│   │   ├── Assignment.py
+│   │   ├── Final_df.csv
+│   │   ├── README.md
+│   │   └── aligned_sentences.csv
+│   └── Assignment-3/
+│       └── language-as-data/
+│           ├── Assignment.ipynb
+│           ├── English.xml
+│           ├── Final_df.csv
+│           ├── Hindi.xml
+│           ├── README.md
+│           └── aligned_sentences.csv
+├── data/
+│   └── dataset_en_hi.xlsx
+├── parallel-n/
+│   ├── IITB.en-hi.en
+│   └── IITB.en-hi.hi
+├── English.xml
+├── Hindi.xml
+├── folder_structure.txt
+└── map.py
